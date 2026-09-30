@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Observatorio Fenómeno de El Niño en Colombia | IDEAM & Prensa</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para Iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js para Gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { 50: '#fff7ed', 100: '#ffedd5', 500: '#f97316', 600: '#ea580c', 700: '#c2410c', 900: '#7c2d12' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        canvas {
+            border-radius: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-900 dark:text-slate-100 transition-colors duration-300 font-sans min-h-screen flex flex-col">
+
+    <!-- BARRA SUPERIOR: HORA, FECHA Y MODO OSCURO -->
+    <header class="bg-gradient-to-r from-orange-600 via-amber-600 to-red-600 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-2">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white/20 p-2 rounded-xl backdrop-blur-md">
+                    <i class="fa-solid fa-sun text-2xl animate-spin-slow"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-lg tracking-wide uppercase">Monitoreo Climático Colombia</h1>
+                    <p class="text-xs text-amber-100">Datos Oficiales IDEAM & Medios Nacionales</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-4 bg-black/20 px-4 py-2 rounded-2xl backdrop-blur-md text-sm flex-wrap justify-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-regular fa-calendar text-amber-300"></i>
+                    <span id="current-date" class="font-medium">Cargando fecha...</span>
+                </div>
+                <div class="h-4 w-px bg-white/30 hidden sm:block"></div>
+                <div class="flex items-center space-x-2">
+                    <i class="fa-regular fa-clock text-amber-300"></i>
+                    <span id="current-time" class="font-mono font-bold text-amber-200">00:00:00</span>
+                </div>
+                <button onclick="toggleDarkMode()" class="ml-2 bg-white/20 hover:bg-white/30 p-1.5 rounded-lg transition" title="Cambiar Tema">
+                    <i id="theme-icon" class="fa-solid fa-moon"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 py-8 w-full space-y-10">
+
+        <!-- SECCIÓN 1: TARJETAS DE ESTADÍSTICAS EN TIEMPO REAL -->
+        <section>
+            <div class="flex justify-between items-end mb-6">
+                <div>
+                    <span class="text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">Indicadores Clave</span>
+                    <h2 class="text-2xl font-extrabold tracking-tight">Estadísticas en Tiempo Real</h2>
+                </div>
+                <button onclick="refreshStats()" class="text-xs bg-orange-100 hover:bg-orange-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-orange-700 dark:text-orange-300 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate"></i> Actualizar Datos
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Tarjeta 1 -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:shadow-md transition">
+                    <div class="absolute top-0 right-0 p-4 text-orange-500/10 dark:text-orange-400/10 text-5xl group-hover:scale-110 transition">
+                        <i class="fa-solid fa-water"></i>
+                    </div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Nivel Promedio Embalses</p>
+                    <h3 class="text-3xl font-black mt-2 text-slate-900 dark:text-white" id="stat-embalses">42.8%</h3>
+                    <div class="mt-3 flex items-center text-xs text-red-600 dark:text-red-400 font-semibold">
+                        <i class="fa-solid fa-arrow-trend-down mr-1"></i> -1.4% vs semana anterior
+                    </div>
+                </div>
+
+                <!-- Tarjeta 2 -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:shadow-md transition">
+                    <div class="absolute top-0 right-0 p-4 text-amber-500/10 dark:text-amber-400/10 text-5xl group-hover:scale-110 transition">
+                        <i class="fa-solid fa-temperature-three-quarters"></i>
+                    </div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Anomalía Térmica (Niño 3.4)</p>
+                    <h3 class="text-3xl font-black mt-2 text-slate-900 dark:text-white" id="stat-temp">+1.8°C</h3>
+                    <div class="mt-3 flex items-center text-xs text-amber-600 dark:text-amber-400 font-semibold">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Intensidad Fuerte
+                    </div>
+                </div>
+
+                <!-- Tarjeta 3 -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:shadow-md transition">
+                    <div class="absolute top-0 right-0 p-4 text-red-500/10 dark:text-red-400/10 text-5xl group-hover:scale-110 transition">
+                        <i class="fa-solid fa-fire-flame-curved"></i>
+                    </div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Municipios en Alerta Roja</p>
+                    <h3 class="text-3xl font-black mt-2 text-slate-900 dark:text-white" id="stat-municipios">324</h3>
+                    <div class="mt-3 flex items-center text-xs text-red-600 dark:text-red-400 font-semibold">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Riesgo de Incendios Forestales
+                    </div>
+                </div>
+
+                <!-- Tarjeta 4 -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 relative overflow-hidden group hover:shadow-md transition">
+                    <div class="absolute top-0 right-0 p-4 text-blue-500/10 dark:text-blue-400/10 text-5xl group-hover:scale-110 transition">
+                        <i class="fa-solid fa-cloud-rain"></i>
+                    </div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Déficit de Lluvias Nacional</p>
+                    <h3 class="text-3xl font-black mt-2 text-slate-900 dark:text-white" id="stat-deficit">-45%</h3>
+                    <div class="mt-3 flex items-center text-xs text-blue-600 dark:text-blue-400 font-semibold">
+                        <i class="fa-solid fa-chart-line mr-1"></i> Monitoreo IDEAM
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 2: EXPLORADOR REGIONAL Y GRÁFICO -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+                <div>
+                    <span class="text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">Filtro Geográfico</span>
+                    <h3 class="text-xl font-bold mt-1 mb-4">Impacto por Regiones de Colombia</h3>
+                    <p class="text-sm text-slate-600 dark:text-slate-400 mb-6">Selecciona una región para ver el reporte de afectación y recomendaciones oficiales:</p>
+                    
+                    <div class="space-y-2.5" id="region-buttons">
+                        <button onclick="selectRegion('andina')" class="w-full text-left px-4 py-3 rounded-xl font-semibold transition flex justify-between items-center bg-orange-600 text-white shadow-sm region-btn" data-region="andina">
+                            <span><i class="fa-solid fa-mountain mr-2"></i> Región Andina</span>
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                        <button onclick="selectRegion('caribe')" class="w-full text-left px-4 py-3 rounded-xl font-semibold transition flex justify-between items-center bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 region-btn" data-region="caribe">
+                            <span><i class="fa-solid fa-umbrella-beach mr-2"></i> Región Caribe</span>
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                        <button onclick="selectRegion('pacifica')" class="w-full text-left px-4 py-3 rounded-xl font-semibold transition flex justify-between items-center bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 region-btn" data-region="pacifica">
+                            <span><i class="fa-solid fa-water mr-2"></i> Región Pacífica</span>
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                        <button onclick="selectRegion('orinoquia')" class="w-full text-left px-4 py-3 rounded-xl font-semibold transition flex justify-between items-center bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 region-btn" data-region="orinoquia">
+                            <span><i class="fa-solid fa-seedling mr-2"></i> Orinoquía</span>
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                        <button onclick="selectRegion('amazonia')" class="w-full text-left px-4 py-3 rounded-xl font-semibold transition flex justify-between items-center bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 region-btn" data-region="amazonia">
+                            <span><i class="fa-solid fa-tree mr-2"></i> Amazonía</span>
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-4 flex-wrap gap-2">
+                        <div>
+                            <span id="region-badge" class="bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 text-xs font-bold px-3 py-1 rounded-full uppercase">Región Andina</span>
+                            <h3 id="region-title" class="text-2xl font-black mt-2">Impacto Crítico en Embalses y Abastecimiento</h3>
+                        </div>
+                        <div id="region-alert-level" class="bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 px-3 py-1 rounded-xl text-xs font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-circle-exclamation"></i> Alerta Roja
+                        </div>
+                    </div>
+                    
+                    <p id="region-desc" class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed mb-6">
+                        Concentra la mayor preocupación debido al descenso en los embalses como Chingaza y Chuza que abastecen a Bogotá y municipios cercanos.
+                    </p>
+
+                    <div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 h-64 relative">
+                        <canvas id="regionChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-xs text-slate-500">
+                    <span>Fuente: Boletines Climáticos IDEAM & Medios Nacionales</span>
+                    <span id="region-update-time" class="font-mono">Actualizado hoy</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 3: VIDEOJUEGO INTERACTIVO INTEGRADO -->
+        <section class="bg-slate-900 text-white p-6 md:p-8 rounded-3xl shadow-xl border border-slate-800 relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 text-slate-800/40 text-9xl pointer-events-none">
+                <i class="fa-solid fa-gamepad"></i>
+            </div>
+            
+            <div class="max-w-3xl mx-auto text-center mb-6">
+                <span class="bg-orange-600/20 text-orange-400 font-bold text-xs uppercase tracking-widest px-3 py-1 rounded-full border border-orange-500/30">Minijuego Educativo</span>
+                <h2 class="text-3xl font-black mt-2">Defensores del Agua y la Energía</h2>
+                <p class="text-slate-400 text-sm mt-1">Atrapa gotas de lluvia 💧 y energía ⚡ para salvar los embalses colombianos, mientras esquivas las olas de calor 🔥.</p>
+            </div>
+
+            <div class="flex flex-col items-center justify-center relative">
+                <!-- Pantalla de Inicio / Game Over -->
+                <div id="game-overlay" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md rounded-2xl flex flex-col items-center justify-center z-10 p-6 text-center max-w-[400px] h-[550px] m-auto">
+                    <h3 id="overlay-title" class="text-2xl font-bold text-amber-400 mb-2">¡Misión Climática Lista!</h3>
+                    <p id="overlay-desc" class="text-sm text-slate-300 mb-6">Mueve tu tanque de reserva con las flechas del teclado o los botones táctiles para recolectar agua y evitar que la crisis empeore.</p>
+                    <button onclick="startGame()" class="bg-orange-600 hover:bg-orange-500 text-white font-bold px-6 py-3 rounded-xl shadow-lg transition transform hover:scale-105">
+                        <i class="fa-solid fa-play mr-2"></i> Iniciar Juego
+                    </button>
+                </div>
+
+                <!-- Canvas del Juego -->
+                <canvas id="gameCanvas" width="400" height="550" class="w-full max-w-[400px] h-[550px] bg-slate-950 shadow-2xl border border-slate-700"></canvas>
+            </div>
+
+            <!-- Controles táctiles móviles -->
+            <div class="flex gap-4 mt-4 max-w-[400px] mx-auto">
+                <button onclick="moveLeft()" class="flex-1 bg-slate-800 hover:bg-slate-700 active:bg-orange-600 py-3 rounded-xl font-bold text-lg shadow border border-slate-700">
+                    <i class="fa-solid fa-arrow-left"></i> Izquierda
+                </button>
+                <button onclick="moveRight()" class="flex-1 bg-slate-800 hover:bg-slate-700 active:bg-orange-600 py-3 rounded-xl font-bold text-lg shadow border border-slate-700">
+                    Derecha <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 4: NOTICIAS Y REPORTES DE PRENSA -->
+        <section>
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 gap-4">
+                <div>
+                    <span class="text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">Hemeroteca y Actualidad</span>
+                   <!-- HEMEROTECA Y ACTUALIDAD -->
+
+<!-- SECCIÓN DE NOTICIAS Y REPORTES -->
+<section class="news-section">
+  <div class="news-header">
+    <span class="news-subtitle">HEMEROTECA Y ACTUALIDAD</span>
+    <h2>Últimas Noticias y Prensa Nacional</h2>
+  </div>
+<section class="news-section">
+  <div class="news-header">
+   
+
+  <div class="news-grid">
+    
+    <!-- Cuadro 1 -->
+    <article class="news-card">
+      <div class="card-tag tag-ideam">
+        <span>EL TIEMPO / IDEAM</span>
+        <span class="tag-time">HACE 2 HORAS</span>
+      </div>
+      <h3>IDEAM alerta sobre la prolongación de la temporada seca y más de 300 municipios en riesgo forestal</h3>
+      <p>Las autoridades ambientales piden extremar precauciones ante las altas temperaturas que superan los 38°C en varias zonas del país.</p>
+      <a href="https://www.ideam.gov.co/" target="_blank" rel="noopener noreferrer" class="report-btn">
+        <span>Ver reporte oficial</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+      </a>
+    </article>
+
+    <!-- Cuadro 2 -->
+    <article class="news-card">
+      <div class="card-tag tag-chingaza">
+        <span>SEMANA / CARACOL RADIO</span>
+        <span class="tag-time">HACE 5 HORAS</span>
+      </div>
+      <h3>Crisis en embalses de Chingaza obliga a evaluar nuevas restricciones en el suministro de agua potable</h3>
+      <p>Alcaldías locales y empresas de acueducto intensifican campañas para evitar un racionamiento más severo ante el bajo aporte de lluvias.</p>
+      <a href="https://www.acueducto.com.co/" target="_blank" rel="noopener noreferrer" class="report-btn">
+        <span>Leer artículo completo</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+      </a>
+    </article>
+
+    <!-- Cuadro 3 -->
+    <article class="news-card">
+      <div class="card-tag tag-sac">
+        <span>LA REPÚBLICA / PORTAFOLIO</span>
+        <span class="tag-time">AYER</span>
+      </div>
+      <h3>Gremios agrícolas reportan afectaciones por déficit hídrico en cultivos transitorios y pastueños</h3>
+      <p>La Sociedad de Agricultores de Colombia (SAC) monitorea el impacto en costos de producción y precios de alimentos básicos.</p>
+      <a href="https://www.sac.org.co/" target="_blank" rel="noopener noreferrer" class="report-btn">
+        <span>Ver informe económico</span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+      </a>
+    </article>
+
+  </div>
+</section>
+  <div class="news-grid">
+    
+
+
+
+        <!-- SECCIÓN 5: CALCULADORA Y TRIVIA -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                <span class="text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">Acción Ciudadana</span>
+                <h3 class="text-xl font-bold mt-1 mb-4">Calculadora de Ahorro en el Hogar</h3>
+                <p class="text-sm text-slate-600 dark:text-slate-400 mb-6">Mueve los controles para calcular cuánto agua y energía puedes ahorrar al mes frente a El Niño.</p>
+                
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-sm font-semibold mb-1">
+                            <span>Reducción ducha (minutos menos):</span>
+                            <span id="slider-val-1" class="text-orange-600">3 min</span>
+                        </div>
+                        <input type="range" min="1" max="10" value="3" class="w-full accent-orange-600 cursor-pointer" id="calc-slider-1" oninput="updateCalculator()">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-sm font-semibold mb-1">
+                            <span>Apagado de electrodomésticos en standby (%):</span>
+                            <span id="slider-val-2" class="text-orange-600">50%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="50" class="w-full accent-orange-600 cursor-pointer" id="calc-slider-2" oninput="updateCalculator()">
+                    </div>
+
+                    <div class="bg-orange-50 dark:bg-slate-900 p-4 rounded-xl border border-orange-200 dark:border-slate-700 mt-6 text-center">
+                        <p class="text-xs text-slate-500 uppercase font-bold">Ahorro Estimado Mensual en tu Hogar</p>
+                        <div class="text-2xl font-black text-orange-600 dark:text-orange-400 mt-1" id="calc-result">~1,200 Litros de Agua y 18 kWh</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+                <div>
+                    <span class="text-orange-600 dark:text-orange-400 font-bold text-xs uppercase tracking-wider">Pon a prueba tu saber</span>
+                    <h3 class="text-xl font-bold mt-1 mb-4">Trivia del Fenómeno de El Niño</h3>
+                    
+                    <div id="trivia-box">
+                        <p id="trivia-question" class="font-semibold text-slate-800 dark:text-slate-200 mb-4 text-sm">¿Qué fenómeno oceanográfico origina principalmente a El Niño en Colombia?</p>
+                        <div class="space-y-2.5" id="trivia-options">
+                            <button onclick="checkTrivia(0)" class="w-full text-left p-3 rounded-xl text-sm border border-slate-200 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-slate-700 transition trivia-opt">A) El enfriamiento extremo del Océano Atlántico.</button>
+                            <button onclick="checkTrivia(1)" class="w-full text-left p-3 rounded-xl text-sm border border-slate-200 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-slate-700 transition trivia-opt">B) El calentamiento anómalo de la superficie del Océano Pacífico tropical.</button>
+                            <button onclick="checkTrivia(2)" class="w-full text-left p-3 rounded-xl text-sm border border-slate-200 dark:border-slate-700 hover:bg-orange-50 dark:hover:bg-slate-700 transition trivia-opt">C) El aumento de las lluvias en la Amazonía brasileña.</button>
+                        </div>
+                    </div>
+                    <div id="trivia-feedback" class="mt-4 p-3 rounded-xl text-xs font-semibold hidden"></div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center text-xs text-slate-400">
+                    <span id="trivia-score">Puntaje correcto: 0/1</span>
+                    <button onclick="resetTrivia()" class="text-orange-600 hover:underline font-semibold">Reiniciar Trivia</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- PIE DE PÁGINA CON CRÉDITOS OFICIALES -->
+    <footer class="bg-slate-900 text-slate-400 py-8 border-t border-slate-800 mt-12">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+            <div>
+                <p class="text-sm font-semibold text-white">Observatorio del Fenómeno de El Niño — Colombia</p>
+                <p class="text-xs mt-1">Información meteorológica y estadística basada en reportes oficiales del IDEAM y prensa nacional.</p>
+            </div>
+            <div class="bg-slate-800 px-5 py-3 rounded-2xl border border-slate-700 flex items-center space-x-2 text-xs">
+                <i class="fa-solid fa-code text-orange-500"></i>
+                <span>Creado con dedicación por <strong class="text-white font-bold">Alejandro</strong> y <strong class="text-white font-bold">Valeria</strong></span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT GENERAL Y DEL VIDEOJUEGO -->
+    <script>
+        // --- 1. RELOJ Y FECHA EN TIEMPO REAL ---
+        function updateClockAndDate() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const dateStr = now.toLocaleDateString('es-CO', options);
+            document.getElementById('current-date').textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('current-time').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        setInterval(updateClockAndDate, 1000);
+        updateClockAndDate();
+
+        // --- 2. MODO OSCURO / CLARO ---
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            html.classList.toggle('dark');
+            icon.className = html.classList.contains('dark') ? "fa-solid fa-sun" : "fa-solid fa-moon";
+        }
+
+        // --- 3. ACTUALIZAR ESTADÍSTICAS ---
+        function refreshStats() {
+            const embalses = (41 + Math.random() * 3).toFixed(1);
+            const temp = (1.7 + Math.random() * 0.3).toFixed(1);
+            const municipios = Math.floor(310 + Math.random() * 30);
+            const deficit = (-48 + Math.random() * 6).toFixed(0);
+
+            document.getElementById('stat-embalses').textContent = embalses + '%';
+            document.getElementById('stat-temp').textContent = '+' + temp + '°C';
+            document.getElementById('stat-municipios').textContent = municipios;
+            document.getElementById('stat-deficit').textContent = deficit + '%';
+
+            const btn = event ? event.currentTarget : null;
+            if(btn) {
+                const icon = btn.querySelector('i');
+                icon.classList.add('fa-spin');
+                setTimeout(() => icon.classList.remove('fa-spin'), 800);
+            }
+        }
+
+        // --- 4. GRÁFICO REGIONAL CON CHART.JS ---
+        let regionChartInstance = null;
+        const regionDataStore = {
+            andina: {
+                title: "Impacto Crítico en Embalses y Abastecimiento",
+                badge: "Región Andina",
+                alert: "Alerta Roja",
+                desc: "Concentra la mayor preocupación debido al descenso en los embalses como Chingaza y Chuza que abastecen a Bogotá y municipios cercanos.",
+                chartData: [42, 38, 40, 39, 41, 42.8],
+                labels: ["Sem 1", "Sem 2", "Sem 3", "Sem 4", "Sem 5", "Actual"]
+            },
+            caribe: {
+                title: "Sequía y Déficit Hídrico en Sabanas y Guajira",
+                badge: "Región Caribe",
+                alert: "Alerta Roja",
+                desc: "Temperaturas máximas históricas que superan los 40°C en departamentos como La Guajira, Magdalena y Cesar.",
+                chartData: [25, 23, 22, 21, 20, 19.5],
+                labels: ["Sem 1", "Sem 2", "Sem 3", "Sem 4", "Sem 5", "Actual"]
+            },
+            pacifica: {
+                title: "Disminución de Precipitaciones Habituales",
+                badge: "Región Pacífica",
+                alert: "Alerta Amarilla",
+                desc: "Aunque es una de las regiones más lluviosas del mundo, El Niño reduce significativamente sus acumulados habituales.",
+                chartData: [70, 65, 62, 60, 58, 57],
+                labels: ["Sem 1", "Sem 2", "Sem 3", "Sem 4", "Sem 5", "Actual"]
+            },
+            orinoquia: {
+                title: "Vulnerabilidad Alta a Incendios Forestales",
+                badge: "Orinoquía",
+                alert: "Alerta Roja",
+                desc: "La sabana presenta sequedad extrema en pastizales, facilitando la rápida propagación de incendios forestales.",
+                chartData: [35, 30, 28, 26, 25, 24],
+                labels: ["Sem 1", "Sem 2", "Sem 3", "Sem 4", "Sem 5", "Actual"]
+            },
+            amazonia: {
+                title: "Nivel Crítico de Ríos y Conectividad Fluvial",
+                badge: "Amazonía",
+                alert: "Alerta Naranja",
+                desc: "Caudales reducidos en los ríos amazónicos dificultan el transporte fluvial y afectan a comunidades ribereñas.",
+                chartData: [60, 55, 52, 50, 48, 46],
+                labels: ["Sem 1", "Sem 2", "Sem 3", "Sem 4", "Sem 5", "Actual"]
+            }
+        };
+
+        function initChart(regionKey) {
+            const ctx = document.getElementById('regionChart').getContext('2d');
+            const data = regionDataStore[regionKey];
+
+            if(regionChartInstance) regionChartInstance.destroy();
+
+            regionChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Nivel / Índice Hídrico (%)',
+                        data: data.chartData,
+                        borderColor: '#f97316',
+                        backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, max: 100, grid: { color: 'rgba(200, 200, 200, 0.1)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function selectRegion(regionKey) {
+            document.querySelectorAll('.region-btn').forEach(btn => {
+                btn.className = "w-full text-left px-4 py-3 rounded-xl font-semibold transition flex justify-between items-center bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 region-btn";
+            });
+            document.querySelector(`[data-region="${regionKey}"]`).className = "w-full text-left px-4 py-3 rounded-xl font-semibold transition flex justify-between items-center bg-orange-600 text-white shadow-sm region-btn";
+
+            const data = regionDataStore[regionKey];
+            document.getElementById('region-badge').textContent = data.badge;
+            document.getElementById('region-title').textContent = data.title;
+            document.getElementById('region-desc').textContent = data.desc;
+            document.getElementById('region-alert-level').textContent = data.alert;
+            
+            initChart(regionKey);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => initChart('andina'));
+
+        // --- 5. LÓGICA DEL VIDEOJUEGO INTEGRADO ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let gameRunning = false;
+        let score = 0;
+        let embalseLevel = 100;
+        let items = [];
+        let gameInterval, itemSpawner;
+
+        let player = {
+            x: 170,
+            y: 480,
+            width: 60,
+            height: 35,
+            speed: 25,
+            color: '#3b82f6'
+        };
+
+        window.addEventListener('keydown', (e) => {
+            if (!gameRunning) return;
+            if (e.key === 'ArrowLeft') moveLeft();
+            if (e.key === 'ArrowRight') moveRight();
+        });
+
+        function moveLeft() {
+            player.x = Math.max(0, player.x - player.speed);
+        }
+
+        function moveRight() {
+            player.x = Math.min(canvas.width - player.width, player.x + player.speed);
+        }
+
+        function startGame() {
+            document.getElementById('game-overlay').classList.add('hidden');
+            score = 0;
+            embalseLevel = 100;
+            items = [];
+            gameRunning = true;
+
+            if (gameInterval) clearInterval(gameInterval);
+            if (itemSpawner) clearInterval(itemSpawner);
+
+            gameInterval = setInterval(updateGame, 1000 / 60);
+            itemSpawner = setInterval(spawnItem, 700);
+        }
+
+        function spawnItem() {
+            if (!gameRunning) return;
+            const types = ['water', 'water', 'sun', 'energy'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            
+            items.push({
+                x: Math.random() * (canvas.width - 30),
+                y: -30,
+                size: 25,
+                speed: 2 + Math.random() * 2.5,
+                type: type
+            });
+        }
+
+        function updateGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Jugador
+            ctx.fillStyle = player.color;
+            ctx.beginPath();
+            ctx.roundRect(player.x, player.y, player.width, player.height, [8, 8, 0, 0]);
+            ctx.fill();
+            ctx.fillStyle = '#1d4ed8';
+            ctx.fillRect(player.x + 20, player.y - 8, 20, 8);
+
+            // Ítems
+            for (let i = items.length - 1; i >= 0; i--) {
+                let item = items[i];
+                item.y += item.speed;
+
+                ctx.font = "22px FontAwesome";
+                if (item.type === 'water') {
+                    ctx.fillStyle = '#60a5fa';
+                    ctx.fillText("💧", item.x, item.y);
+                } else if (item.type === 'energy') {
+                    ctx.fillStyle = '#facc15';
+                    ctx.fillText("⚡", item.x, item.y);
+                } else {
+                    ctx.fillStyle = '#f97316';
+                    ctx.fillText("🔥", item.x, item.y);
+                }
+
+                if (
+                    item.x < player.x + player.width &&
+                    item.x + item.size > player.x &&
+                    item.y < player.y + player.height &&
+                    item.y + item.size > player.y
+                ) {
+                    if (item.type === 'water' || item.type === 'energy') {
+                        score += 10;
+                        embalseLevel = Math.min(100, embalseLevel + 5);
+                    } else {
+                        embalseLevel -= 20;
+                    }
+                    items.splice(i, 1);
+                    continue;
+                }
+
+                if (item.y > canvas.height) {
+                    if (item.type === 'water') embalseLevel -= 5;
+                    items.splice(i, 1);
+                }
+            }
+
+            if (embalseLevel <= 0) {
+                endGame();
+            }
+
+            // HUD
+            ctx.fillStyle = '#ffffff';
+            ctx.font = "bold 14px sans-serif";
+            ctx.fillText(`Puntos: ${score}`, 15, 25);
+            ctx.fillText(`Embalses:`, 230, 25);
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(305, 12, 80, 15);
+            ctx.fillStyle = embalseLevel > 30 ? '#22c55e' : '#ef4444';
+            ctx.fillRect(305, 12, (embalseLevel / 100) * 80, 15);
+        }
+
+        function endGame() {
+            gameRunning = false;
+            clearInterval(gameInterval);
+            clearInterval(itemSpawner);
+
+            document.getElementById('overlay-title').textContent = "¡Crisis por Sequía!";
+            document.getElementById('overlay-desc').innerHTML = `Tus embalses llegaron a 0%. Puntuación final: <strong>${score} puntos</strong>.<br>¡Inténtalo de nuevo!`;
+            document.getElementById('game-overlay').classList.remove('hidden');
+        }
+
+        // --- 6. BUSCADOR DE NOTICIAS ---
+        function filterNews() {
+            const query = document.getElementById('news-search').value.toLowerCase();
+            document.querySelectorAll('.news-card').forEach(card => {
+                card.style.display = card.getAttribute('data-title').includes(query) ? "flex" : "none";
+            });
+        }
+
+        // --- 7. CALCULADORA Y TRIVIA ---
+        function updateCalculator() {
+            const val1 = parseInt(document.getElementById('calc-slider-1').value);
+            const val2 = parseInt(document.getElementById('calc-slider-2').value);
+            document.getElementById('slider-val-1').textContent = val1 + ' min';
+            document.getElementById('slider-val-2').textContent = val2 + '%';
+            document.getElementById('calc-result').textContent = `~${(val1 * 350).toLocaleString()} Litros de Agua y ${Math.round(val2 * 0.36)} kWh`;
+        }
+
+        let triviaScore = 0;
+        let answered = false;
+        function checkTrivia(selectedIdx) {
+            if(answered) return;
+            answered = true;
+            const feedback = document.getElementById('trivia-feedback');
+            feedback.classList.remove('hidden');
+
+            if(selectedIdx === 1) {
+                triviaScore = 1;
+                feedback.className = "mt-4 p-3 rounded-xl text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300";
+                feedback.innerHTML = '<i class="fa-solid fa-circle-check mr-1"></i> ¡Correcto! El Fenómeno de El Niño está asociado al calentamiento de las aguas del Océano Pacífico tropical.';
+            } else {
+                feedback.className = "mt-4 p-3 rounded-xl text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300";
+                feedback.innerHTML = '<i class="fa-solid fa-circle-xmark mr-1"></i> Incorrecto. La respuesta correcta es el calentamiento anómalo del Océano Pacífico tropical.';
+            }
+            document.getElementById('trivia-score').textContent = `Puntaje correcto: ${triviaScore}/1`;
+        }
+
+        function resetTrivia() {
+            answered = false;
+            document.getElementById('trivia-feedback').classList.add('hidden');
+            triviaScore = 0;
+            document.getElementById('trivia-score').textContent = `Puntaje correcto: 0/1`;
+        }
+    </script>
+</body>
+</html>
